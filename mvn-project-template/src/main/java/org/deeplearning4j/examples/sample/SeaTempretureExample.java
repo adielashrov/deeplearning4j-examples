@@ -34,6 +34,7 @@ import org.deeplearning4j.zoo.ZooModel;
 import org.deeplearning4j.zoo.model.VGG16;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.learning.config.AdaGrad;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.Logger;
@@ -89,58 +90,138 @@ public class SeaTempretureExample {
     public static void main(String[] args) throws Exception {
 
 
+        /*
+        Download data from url
+         */
+
+        boolean shouldDownload = false;
+
         String DATA_URL = "https://dl4jdata.blob.core.windows.net/training/seatemp/sea_temp.tar.gz";
         String DATA_PATH = FilenameUtils.concat(System.getProperty("java.io.tmpdir"), "dl4j_seas/");
 
-        File directory = new File(DATA_PATH);
-        directory.mkdir();
+        if(shouldDownload) {
 
-        String archizePath = DATA_PATH + "sea_temp.tar.gz";
-        File archiveFile = new File(archizePath);
-        String extractedPath = DATA_PATH + "sea_temp";
-        File extractedFile = new File(extractedPath);
+            File directory = new File(DATA_PATH);
+            directory.mkdir();
 
-        FileUtils.copyURLToFile(new URL(DATA_URL), archiveFile);
+            String archizePath = DATA_PATH + "sea_temp.tar.gz";
+            File archiveFile = new File(archizePath);
+            String extractedPath = DATA_PATH + "sea_temp";
+            File extractedFile = new File(extractedPath);
+
+            FileUtils.copyURLToFile(new URL(DATA_URL), archiveFile);
 
 
-        int fileCount = 0;
-        int dirCount = 0;
-        int BUFFER_SIZE = 4096;
+            int fileCount = 0;
+            int dirCount = 0;
+            int BUFFER_SIZE = 4096;
 
-        TarArchiveInputStream tais = new TarArchiveInputStream(new GzipCompressorInputStream( new BufferedInputStream( new FileInputStream(archizePath))));
+            TarArchiveInputStream tais = new TarArchiveInputStream(new GzipCompressorInputStream(new BufferedInputStream(new FileInputStream(archizePath))));
 
-        // ArchiveEntry entry = tais.getNextEntry().asInstanceOf[TarArchiveEntry];
-        ArchiveEntry entry = tais.getNextEntry();
+            // ArchiveEntry entry = tais.getNextEntry().asInstanceOf[TarArchiveEntry];
+            ArchiveEntry entry = tais.getNextEntry();
 
-        while(entry != null){
-            if (entry.isDirectory()) {
-                new File(DATA_PATH + entry.getName()).mkdirs();
-                dirCount = dirCount + 1;
-                fileCount = 0;
-            }
-            else {
-                byte[] data = new byte[4 * BUFFER_SIZE];
-                FileOutputStream fos = new FileOutputStream(DATA_PATH + entry.getName());
-                BufferedOutputStream dest = new BufferedOutputStream(fos, BUFFER_SIZE);
-                int count;
+            while (entry != null) {
+                if (entry.isDirectory()) {
+                    new File(DATA_PATH + entry.getName()).mkdirs();
+                    dirCount = dirCount + 1;
+                    fileCount = 0;
+                } else {
+                    byte[] data = new byte[4 * BUFFER_SIZE];
+                    FileOutputStream fos = new FileOutputStream(DATA_PATH + entry.getName());
+                    BufferedOutputStream dest = new BufferedOutputStream(fos, BUFFER_SIZE);
+                    int count;
 
-                while ((count = tais.read(data)) > 0) {
-                    dest.write(data, 0, count);
+                    while ((count = tais.read(data)) > 0) {
+                        dest.write(data, 0, count);
+                    }
+
+                    dest.flush();
+                    dest.close();
+                    fileCount = fileCount + 1;
+                }
+                if (fileCount % 1000 == 0) {
+                    log.info(".");
                 }
 
-                dest.flush();
-                dest.close();
-                fileCount = fileCount + 1;
-            }
-            if(fileCount % 1000 == 0){
-                log.info(".");
+                entry = tais.getNextEntry();
             }
 
-            entry = tais.getNextEntry();
         }
+        /*
+            Read data using CSVSequenceRecordReader
+         */
 
-        int NB_TRAIN_EXAMPLES = 3200; // number of training examples
-        int NB_TEST_EXAMPLES = 800; // number of testing examples
+        String path = FilenameUtils.concat(DATA_PATH, "sea_temp/"); // set parent directory
+
+        String featureBaseDir = FilenameUtils.concat(path, "features"); // set feature directory
+        String targetsBaseDir = FilenameUtils.concat(path, "targets"); // set label directory
+
+        int numSkipLines = 1;
+        boolean regression = true;
+        int batchSize = 32;
+
+        CSVSequenceRecordReader trainFeatures = new CSVSequenceRecordReader(numSkipLines, ",");
+        trainFeatures.initialize( new NumberedFileInputSplit(featureBaseDir + "/%d.csv", 1, 1936));
+        CSVSequenceRecordReader trainTargets = new CSVSequenceRecordReader(numSkipLines, ",");
+        trainTargets.initialize(new NumberedFileInputSplit(targetsBaseDir + "/%d.csv", 1, 1936));
+
+        SequenceRecordReaderDataSetIterator train = new SequenceRecordReaderDataSetIterator(trainFeatures, trainTargets, batchSize,
+            10, regression, SequenceRecordReaderDataSetIterator.AlignmentMode.EQUAL_LENGTH);
+
+
+        CSVSequenceRecordReader testFeatures = new CSVSequenceRecordReader(numSkipLines, ",");
+        testFeatures.initialize( new NumberedFileInputSplit(featureBaseDir + "/%d.csv", 1937, 2089));
+        CSVSequenceRecordReader testTargets = new CSVSequenceRecordReader(numSkipLines, ",");
+        testTargets.initialize(new NumberedFileInputSplit(targetsBaseDir + "/%d.csv", 1937, 2089));
+
+        SequenceRecordReaderDataSetIterator test = new SequenceRecordReaderDataSetIterator(testFeatures, testTargets, batchSize,
+            10, regression, SequenceRecordReaderDataSetIterator.AlignmentMode.EQUAL_LENGTH);
+
+
+
+        /*
+            Init neuarl network
+         */
+
+        int V_HEIGHT = 13;
+        int V_WIDTH = 4;
+        int kernelSize = 2;
+        int numChannels = 1;
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+            .seed(12345)
+            .weightInit(WeightInit.XAVIER)
+            .updater(new AdaGrad(0.005))
+            .list()
+            .layer(0, new ConvolutionLayer.Builder(kernelSize, kernelSize)
+                .nIn(1) //1 channel
+                .nOut(7)
+                .stride(2, 2)
+                .activation(Activation.RELU)
+                .build())
+            .layer(1, new LSTM.Builder()
+                .activation(Activation.SOFTSIGN)
+                .nIn(84)
+                .nOut(200)
+                .gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue)
+                .gradientNormalizationThreshold(10)
+                .build())
+            .layer(2, new RnnOutputLayer.Builder(LossFunction.MSE)
+                .activation(Activation.IDENTITY)
+                .nIn(200)
+                .nOut(52)
+                .gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue)
+                .gradientNormalizationThreshold(10)
+                .build())
+            .inputPreProcessor(0, new RnnToCnnPreProcessor(V_HEIGHT, V_WIDTH, numChannels))
+            .inputPreProcessor(1, new CnnToRnnPreProcessor(6, 2, 7 ))
+            .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
 
         log.info("Load data....");
 
