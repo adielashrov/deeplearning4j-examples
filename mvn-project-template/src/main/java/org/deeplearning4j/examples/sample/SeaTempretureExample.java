@@ -83,7 +83,7 @@ import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 
 /**
- * Created by adielas on 30/11/21.
+ * Created by adielas on 30/01/21.
  */
 public class SeaTempretureExample {
     private static final Logger log = LoggerFactory.getLogger(SeaTempretureExample.class);
@@ -112,14 +112,12 @@ public class SeaTempretureExample {
 
             FileUtils.copyURLToFile(new URL(DATA_URL), archiveFile);
 
-
             int fileCount = 0;
             int dirCount = 0;
             int BUFFER_SIZE = 4096;
 
             TarArchiveInputStream tais = new TarArchiveInputStream(new GzipCompressorInputStream(new BufferedInputStream(new FileInputStream(archizePath))));
 
-            // ArchiveEntry entry = tais.getNextEntry().asInstanceOf[TarArchiveEntry];
             ArchiveEntry entry = tais.getNextEntry();
 
             while (entry != null) {
@@ -225,6 +223,8 @@ public class SeaTempretureExample {
 
         // Train model on training set
         net.fit(train , 25);
+
+        net.save(new File("/Users/ashrov/Documents/Dropbox/Adiel Guy/DNNProject/sea_temp_model.net"));
 
         RegressionEvaluation eval = net.evaluateRegression(test);
 
