@@ -29,6 +29,7 @@
     <!-- Properties Section. Change ND4J versions here, if required -->
     <properties>
         <dl4j-master.version>1.0.0-beta7</dl4j-master.version>
+        <nd4j.backend>nd4j-native</nd4j.backend>
         <logback.version>1.2.3</logback.version>
         <java.version>1.8</java.version>
         <maven-shade-plugin.version>2.4.3</maven-shade-plugin.version>
@@ -44,6 +45,12 @@
             <version>${dl4j-master.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>${nd4j.backend}</artifactId>
+            <version>${dl4j-master.version}</version>
+        </dependency>
+
         <!--
         ND4J backend: every project needs one of these. The backend defines the hardware on which network training
         will occur. "nd4j-native-platform" is for CPUs only (for running on all operating systems).
@@ -52,6 +59,12 @@
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-native</artifactId>
             <version>${dl4j-master.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>deeplearning4j-zoo</artifactId>
+            <version>1.0.0-beta7</version>
         </dependency>
 
         <!-- CUDA: to use GPU for training (CUDA) instead of CPU, uncomment this, and remove nd4j-native-platform -->
@@ -96,7 +109,19 @@
                 </configuration>
             </plugin>
 
-
+            <plugin>
+                <!-- Build an executable JAR -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>2.4</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>org.deeplearning4j.examples.sample.SeaTempretureExample</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
             <!--
             Maven shade plugin configuration: this is required so that if you build a single JAR file (an "uber-jar")
             it will contain all the required native libraries, and the backends will work correctly.
@@ -145,6 +170,23 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>my-execution</id>
+                        <phase>install</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <mainClass>org.deeplearning4j.examples.sample.SeaTempretureExample</mainClass>
+                </configuration>
             </plugin>
         </plugins>
     </build>

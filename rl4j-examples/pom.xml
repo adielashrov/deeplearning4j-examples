@@ -114,6 +114,23 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.0.0</version>
+                <executions>
+                    <execution>
+                        <id>my-execution</id>
+                        <phase>install</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <mainClass>org.deeplearning4j.rl4j.examples.advanced.ale.A3C_ALE</mainClass>
+                </configuration>
+            </plugin>
         </plugins>
         <pluginManagement>
             <plugins>

@@ -206,7 +206,8 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <executable>java</executable>
+                    <!--<executable>java</executable>-->
+                    <mainClass>org.deeplearning4j.examples.advanced.modelling.alphagozero.AlphaGoZeroTrainer</mainClass>
                 </configuration>
             </plugin>
             <plugin>
@@ -247,6 +248,36 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <!-- Build an executable JAR -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>2.4</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>org.deeplearning4j.examples.advanced.modelling.alphagozero.AlphaGoZeroTrainer</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>my-execution</id>
+                        <phase>install</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <mainClass>org.deeplearning4j.examples.advanced.modelling.alphagozero.AlphaGoZeroTrainer</mainClass>
+                </configuration>
             </plugin>
         </plugins>
         <pluginManagement>
