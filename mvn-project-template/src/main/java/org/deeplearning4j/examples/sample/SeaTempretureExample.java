@@ -53,13 +53,14 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.datasets.datavec.SequenceRecordReaderDataSetIterator;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
+import org.nd4j.evaluation.regression.RegressionEvaluation;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.nd4j.linalg.dataset.DataSet;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToCnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 // import org.deeplearning4j.nn.conf.layers;
-import org.deeplearning4j.eval.RegressionEvaluation;
+//import org.deeplearning4j.eval.RegressionEvaluation;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.Updater;
@@ -162,18 +163,18 @@ public class SeaTempretureExample {
         int batchSize = 32;
 
         CSVSequenceRecordReader trainFeatures = new CSVSequenceRecordReader(numSkipLines, ",");
-        trainFeatures.initialize( new NumberedFileInputSplit(featureBaseDir + "/%d.csv", 1, 1936));
+        trainFeatures.initialize( new NumberedFileInputSplit(featureBaseDir + "/%d.csv", 1, 1042));
         CSVSequenceRecordReader trainTargets = new CSVSequenceRecordReader(numSkipLines, ",");
-        trainTargets.initialize(new NumberedFileInputSplit(targetsBaseDir + "/%d.csv", 1, 1936));
+        trainTargets.initialize(new NumberedFileInputSplit(targetsBaseDir + "/%d.csv", 1, 1042));
 
         SequenceRecordReaderDataSetIterator train = new SequenceRecordReaderDataSetIterator(trainFeatures, trainTargets, batchSize,
             10, regression, SequenceRecordReaderDataSetIterator.AlignmentMode.EQUAL_LENGTH);
 
 
         CSVSequenceRecordReader testFeatures = new CSVSequenceRecordReader(numSkipLines, ",");
-        testFeatures.initialize( new NumberedFileInputSplit(featureBaseDir + "/%d.csv", 1937, 2089));
+        testFeatures.initialize( new NumberedFileInputSplit(featureBaseDir + "/%d.csv", 1043, 1736));
         CSVSequenceRecordReader testTargets = new CSVSequenceRecordReader(numSkipLines, ",");
-        testTargets.initialize(new NumberedFileInputSplit(targetsBaseDir + "/%d.csv", 1937, 2089));
+        testTargets.initialize(new NumberedFileInputSplit(targetsBaseDir + "/%d.csv", 1043, 1736));
 
         SequenceRecordReaderDataSetIterator test = new SequenceRecordReaderDataSetIterator(testFeatures, testTargets, batchSize,
             10, regression, SequenceRecordReaderDataSetIterator.AlignmentMode.EQUAL_LENGTH);
@@ -222,8 +223,16 @@ public class SeaTempretureExample {
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
+        // Train model on training set
+        net.fit(train , 25);
 
-        log.info("Load data....");
+        RegressionEvaluation eval = net.evaluateRegression(test);
+
+        test.reset();
+        System.out.println();
+        System.out.println(eval.stats());
+
+        log.info("Finished evaluation....");
 
         log.info("****************Example finished********************");
     }
