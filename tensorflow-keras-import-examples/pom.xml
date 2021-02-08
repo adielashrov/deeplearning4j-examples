@@ -191,6 +191,23 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>my-execution</id>
+                        <phase>install</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <mainClass>org.deeplearning4j.modelimportexamples.tf.quickstart.MNISTMLP</mainClass>
+                </configuration>
+            </plugin>
         </plugins>
         <pluginManagement>
             <plugins>

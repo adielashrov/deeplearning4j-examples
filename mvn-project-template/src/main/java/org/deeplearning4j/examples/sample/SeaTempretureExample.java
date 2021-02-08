@@ -95,7 +95,7 @@ public class SeaTempretureExample {
         Download data from url
          */
 
-        boolean shouldDownload = false;
+        boolean shouldDownload = true;
 
         String DATA_URL = "https://dl4jdata.blob.core.windows.net/training/seatemp/sea_temp.tar.gz";
         String DATA_PATH = FilenameUtils.concat(System.getProperty("java.io.tmpdir"), "dl4j_seas/");
