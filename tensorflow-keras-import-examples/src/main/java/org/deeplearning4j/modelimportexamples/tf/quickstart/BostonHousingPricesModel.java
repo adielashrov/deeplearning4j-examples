@@ -52,6 +52,7 @@ public class BostonHousingPricesModel {
     }
 
     private static void loadStats() throws Exception {
+
         File file = new File(dataLocalPath, "Boston/stats.txt");
         String[] stats = FileUtils.readFileToString(file, defaultCharset()).split(",");
         String[] means = stats[0].replaceAll("\\[|\\]|\n", "").split(" ");
@@ -60,6 +61,7 @@ public class BostonHousingPricesModel {
         assert (means.length == 13);
         meanNDArray = Nd4j.create(Arrays.stream(means).mapToDouble(Double::parseDouble).toArray());
         stdNDArray = Nd4j.create(Arrays.stream(stds).mapToDouble(Double::parseDouble).toArray());
+
     }
 
     public static INDArray getSampleData() {
@@ -106,6 +108,11 @@ public class BostonHousingPricesModel {
     public static void main(String[] args) throws Exception {
         dataLocalPath = DownloaderUtility.TFIMPORTEXAMPLES.Download();
         loadModel("Boston/boston.pb");
+
+        System.out.println("Summary before we associate the input variable with it.");
+
+        System.out.println(sd.summary());
+
         loadStats();
         INDArray sampleData = getSampleData();
         double prediction = predict(sampleData); // in $1000
